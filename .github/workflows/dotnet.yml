@@ -27,7 +27,8 @@ jobs:
         -v ${{runner.temp}}/test-results/otel/:/mnt/otel-export
         -v ./otel-exporter.yaml:/mnt/otel-config.yaml
         -e ASPIRE_ENDPOINT=http://host.docker.internal:14317
-        -u $(id -u):$(id -g)
+        -u $(id -u)
+        -g $(id -g)
         otel/opentelemetry-collector-contrib:latest
         --config /mnt/otel-config.yaml
     - name: ⚙️ Setup .NET
