@@ -18,8 +18,8 @@ jobs:
     #  run: echo TEST_RESULTS_DIR=${{runner.temp}}/test-results >> $GITHUB_ENV
     - name: 📥 Checkout
       uses: actions/checkout@v4
-    - name: 🐳 Docker status
-      run: docker info
+    #- name: 🐳 Docker status
+    #  run: docker info
     - name: 🩺 Start Otel Collector
       run: >
         mkdir -p ${{runner.temp}}/test-results/otel/;
