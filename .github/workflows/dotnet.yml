@@ -12,9 +12,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      TEST_RESULTS_DIR: ${{runner.temp}}/test-results/
     steps:
+    - name: 🧮 Calculate env vars
+      run: echo TEST_RESULTS_DIR=${{runner.temp}}test-results >> $GITHUB_ENV
     - name: 📥 Checkout
       uses: actions/checkout@v4
     - name: 🐳 Docker status
