@@ -1,0 +1,20 @@
+﻿exporters:
+  otlp/aspire:
+    endpoint: ${env:ASPIRE_ENDPOINT}
+    headers:
+      x-otlp-api-key: ${env:ASPIRE_API_KEY}
+    tls:
+      # Uncomment the following on .Net 9 and below as the cert doesn't include `host.docker.internal`
+      insecure_skip_verify: true
+  
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlp/aspire]
+    metrics:
+      receivers: [otlp]
+      exporters: [otlp/aspire]
+    logs:
+      receivers: [otlp]
+      exporters: [otlp/aspire]

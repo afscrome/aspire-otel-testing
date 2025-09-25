@@ -1,0 +1,6 @@
+{
+  "LogDirectory": ".",
+  "FileSize": 4096,
+  "LogLevel": "Warning",
+  "FormatMessage": "true"
+}
