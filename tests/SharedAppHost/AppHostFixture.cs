@@ -40,7 +40,6 @@ public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
         await App.StartAsync(cts.Token);
         logger.LogInformation("App Host started");
 
-        cts.Cancel();
         //wait for all resources to go healthy
         await Task.WhenAll(appHost.Resources.Select(WaitForHealthy));
 
