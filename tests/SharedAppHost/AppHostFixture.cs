@@ -15,7 +15,7 @@ public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
     {
         using var _ = Source.StartActivity("AppHostFixture.InitializeAsync");
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(TimeSpan.FromSeconds(60));
+        cts.CancelAfter(TimeSpan.FromSeconds(30));
 
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.AppHost>();
 
@@ -34,36 +34,8 @@ public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
         ConfigureOtel(appHost);
 
         App = await appHost.BuildAsync(cts.Token);
-        var logger = App.Services.GetRequiredService<ILoggerFactory>().CreateLogger<AppHostFixture>();
-
-        logger.LogInformation("Starting App Host");
-        await App.StartAsync(cts.Token);
-        logger.LogInformation("App Host started");
-
-        //wait for all resources to go healthy
-        await Task.WhenAll(appHost.Resources.Select(WaitForHealthy));
-
-        async Task WaitForHealthy(IResource resource)
-        {
-            try
-            {
-                logger.LogInformation("Waiting for {Resource} to become healthy", resource.Name);
-                await App.ResourceNotifications.WaitForResourceHealthyAsync(resource.Name, cts.Token);
-                logger.LogInformation("{Resource} is healthy", resource.Name);
-            }
-            catch (OperationCanceledException)
-            {
-                if (App.ResourceNotifications.TryGetCurrentState(resource.Name, out var state))
-                {
-                    logger.LogError("{Resource} failed to become healthy. {Health} {State} {HealthReports}", resource.Name, state.Snapshot.HealthStatus, state.Snapshot.State, state.Snapshot.HealthReports);
-                }
-                else
-                {
-                    logger.LogError("{Resource} failed to become healthy - Unable to determine state", resource.Name);
-                }
-                throw;
-            }
-        }
+ 
+        await App.StartWithLoggingAsync(cts.Token);
     }
 
 
