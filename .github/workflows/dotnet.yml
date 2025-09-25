@@ -22,7 +22,7 @@ jobs:
       run: docker info
     - name: 🩺 Start Otel Collector
       run: >
-        docker run --rm -it
+        docker run --rm
         -p 4317:4317
         -v ${{runner.temp}}/test-results/otel/:/mnt/otel-export
         -v otel-exporter.yaml:/mnt/otel-config.yaml
