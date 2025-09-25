@@ -1,7 +1,6 @@
 ﻿using Aspire.Hosting;
 using Microsoft.Extensions.Logging;
-using OpenTelemetry.Logs;
-using OpenTelemetry.Resources;
+using SharedAppHost.Framework;
 using System.Diagnostics;
 
 namespace SharedAppHost;
@@ -19,64 +18,31 @@ public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
 
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.AppHost>();
 
-        //TODO: Sync this resource up with the xunit fixture wide resoruce
+        appHost.WithOpenTelemetry();
+
+        if (Environment.GetEnvironmentVariable("DCP_DIAGNOSTICS_LOG_FOLDER") is { Length: > 0 } dcpLogDir)
+        {
+            //TODO: Can we get the test results directory from xunit instead of repeating it
+            appHost.WithResourceFileLogging(Path.Combine(dcpLogDir, ".."));
+
+        }
+
+
         appHost.Services.AddLogging(logging =>
         {
             logging.SetMinimumLevel(LogLevel.Debug);
-            logging.AddFilter(appHost.Environment.ApplicationName, LogLevel.Error);
-            logging.AddFilter("Aspire.", LogLevel.Debug);
-            logging.AddFilter("Microsoft.", LogLevel.Debug);
-            logging.AddFilter(typeof(AppHostFixture).Namespace, LogLevel.Debug);
+            logging.AddFilter("Aspire.", LogLevel.Information);
+            logging.AddFilter("Microsoft.", LogLevel.Information);
+            logging.AddFilter(typeof(AppHostFixture).Namespace, LogLevel.Information);
         });
-
-        TestContext.Current.AddAttachment("hello", "world");
-
-        ConfigureOtel(appHost);
 
         App = await appHost.BuildAsync(cts.Token);
  
         await App.StartWithLoggingAsync(cts.Token);
+        throw new Exception();
     }
 
 
-    private static void ConfigureOtel(IDistributedApplicationTestingBuilder appHost)
-    {
-        var otelEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
-        if (string.IsNullOrEmpty(otelEndpoint))
-            return;
-
-        // Speed up export interval
-        // (Aspire already does it for resources it manages, but want those same for the telemetry the host itself emits
-        appHost.Configuration["OTEL_BSP_SCHEDULE_DELAY"] = "1000";
-        appHost.Configuration["OTEL_BLRP_SCHEDULE_DELAY"] = "1000";
-        appHost.Configuration["OTEL_METRIC_EXPORT_INTERVAL"] = "1000";
-
-        // Only configuring logging here - traces & metrics are handled at process level by xUnit integration
-        appHost.Services.AddLogging(logging =>
-        {
-            logging.AddOpenTelemetry(x => {
-                var resourceBuilder = ResourceBuilder.CreateDefault();
-                OtelTestFramework.ConfigureResource(resourceBuilder);
-                x.IncludeFormattedMessage = true;
-                x.AddOtlpExporter();
-                x.SetResourceBuilder(resourceBuilder);
-            });
-        });
-
-        appHost.Eventing.Subscribe<BeforeStartEvent>((evt, ct) =>
-        {
-            foreach (var resource in evt.Model.Resources)
-            {
-                resource.Annotations.Add(new EnvironmentCallbackAnnotation(e =>
-                {
-                    e.EnvironmentVariables["OTEL_EXPORTER_OTLP_ENDPOINT"] = new HostUrl(otelEndpoint);
-                }));
-            }
-
-            return Task.CompletedTask;
-        });
-
-    }
 
     public async ValueTask DisposeAsync()
     {

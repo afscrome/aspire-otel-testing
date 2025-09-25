@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SharedAppHost;
+namespace SharedAppHost.Framework;
 
 public static class DistributedApplicationExtensions
 {
