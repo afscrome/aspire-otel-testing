@@ -20,6 +20,15 @@ jobs:
       uses: actions/checkout@v4
     - name: 🐳 Docker status
       run: docker info
+    - name: 🩺 Start Otel Collector
+      run: | 
+        docker run --rm -it
+        -p 4317:4317
+        -v ${{runner.temp}}/test-results/otel/:/mnt/otel-export
+        -v otel-exporter.yaml:/mnt/otel-config.yaml
+        -e ASPIRE_ENDPOINT=http://host.docker.internal:14317
+        otel/opentelemetry-collector-contrib:latest
+        --config /mnt/otel-config.yaml
     - name: ⚙️ Setup .NET
       uses: actions/setup-dotnet@v4
       with:

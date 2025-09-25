@@ -23,7 +23,7 @@ public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
         if (Environment.GetEnvironmentVariable("DCP_DIAGNOSTICS_LOG_FOLDER") is { Length: > 0 } dcpLogDir)
         {
             //TODO: Can we get the test results directory from xunit instead of repeating it
-            appHost.WithResourceFileLogging(Path.Combine(dcpLogDir, ".."));
+            appHost.WithResourceFileLogging(Path.Combine(dcpLogDir, "../resources"));
         }
 
 
@@ -44,6 +44,8 @@ public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
 
     public async ValueTask DisposeAsync()
     {
+        TestContext.Current.AddAttachment("Hello", "world");
+
         // HACK: Need to give Projects enough time to flush their telemery
         // Without this, telemetry intermittently goes missing
         await Task.Delay(TimeSpan.FromSeconds(2));

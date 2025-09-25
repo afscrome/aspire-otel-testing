@@ -14,7 +14,7 @@ public static class DistributedApplicationBuilderExtensions
 
         builder.Services.AddLogging(logging =>
         {
-            // Supress the resources form the main aspire logger since we're writing them to file
+            // Suppress the resources form the main aspire logger since we're writing them to file
             logging.AddFilter($"{builder.Environment.ApplicationName}.Resources", LogLevel.None);
         });
 
@@ -39,7 +39,7 @@ public static class DistributedApplicationBuilderExtensions
         {
             logging.AddOpenTelemetry(x => {
                 var resourceBuilder = ResourceBuilder.CreateDefault();
-                OtelTestFramework.ConfigureResource(resourceBuilder);
+                OtelHelper.ConfigureResource(resourceBuilder);
                 x.IncludeFormattedMessage = true;
                 x.AddOtlpExporter();
                 x.SetResourceBuilder(resourceBuilder);

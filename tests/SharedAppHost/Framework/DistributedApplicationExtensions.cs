@@ -1,22 +1,16 @@
 ﻿using Aspire.Hosting;
-using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
-using Projects;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SharedAppHost.Framework;
 
 public static class DistributedApplicationExtensions
 {
-
     public static async Task StartWithLoggingAsync(this DistributedApplication app, CancellationToken cancellationToken)
     {
         var model = app.Services.GetRequiredService<DistributedApplicationModel>();
         var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger<AppHostFixture>();
+
+        cancellationToken.ThrowIfCancellationRequested();
 
         logger.LogInformation("Starting App Host");
 
@@ -25,21 +19,20 @@ public static class DistributedApplicationExtensions
 
         await Task.WhenAll(startTask, healthCheckTasks);
 
-        logger.LogInformation("App Host started");
+        logger.LogInformation("App Host started, and all resources are healthy");
 
         async Task WaitForHealthy(IResource resource)
         {
             try
             {
-                logger.LogInformation("Waiting for {Resource} to become healthy", resource.Name);
                 await app.ResourceNotifications.WaitForResourceHealthyAsync(resource.Name, cancellationToken);
-                logger.LogInformation("{Resource} is healthy", resource.Name);
             }
             catch (OperationCanceledException)
             {
                 if (app.ResourceNotifications.TryGetCurrentState(resource.Name, out var state))
                 {
-                    logger.LogError("{Resource} failed to become healthy. {Health} {State} {HealthReports}", resource.Name, state.Snapshot.HealthStatus, state.Snapshot.State, state.Snapshot.HealthReports);
+                    var snapshot = state.Snapshot;
+                    logger.LogError("{Resource} failed to become healthy. {Health} {State} {HealthReports}", resource.Name, snapshot.HealthStatus, snapshot.State, snapshot.HealthReports);
                 }
                 else
                 {

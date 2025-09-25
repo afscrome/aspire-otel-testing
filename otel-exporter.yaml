@@ -4,17 +4,29 @@
     headers:
       x-otlp-api-key: ${env:ASPIRE_API_KEY}
     tls:
+      insecure: true
       # Uncomment the following on .Net 9 and below as the cert doesn't include `host.docker.internal`
       insecure_skip_verify: true
-  
+  file/export:
+    path: /mnt/otel-export/otel.json
+    group_by:
+      enabled: true
+      resource_attribute: test.session.id
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [otlp/aspire]
+      exporters: [otlp/aspire, file/export]
     metrics:
       receivers: [otlp]
-      exporters: [otlp/aspire]
+      exporters: [otlp/aspire, file/export]
     logs:
       receivers: [otlp]
-      exporters: [otlp/aspire]
+      exporters: [otlp/aspire, file/export]

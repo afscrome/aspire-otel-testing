@@ -32,24 +32,10 @@ public class OtelTestFramework : TracedPipelineStartup {
     {
         traceProviderSetup = tpb => tpb
             .AddSource("*")
-            .ConfigureResource(ConfigureResource)
+            .ConfigureResource(OtelHelper.ConfigureResource)
             ;
     }
 
 
-    public static string TestSessionId = Guid.NewGuid().ToString()[..8];
 
-    // Somewhat copied from PracticalOtel.xUnit.v3.OpenTelemetry
-    // Need to share the same resource between Xunit infrastructure, and the apphost infrastructure
-    public static void ConfigureResource(ResourceBuilder builder)
-    {
-        builder
-            .AddService(Assembly.GetExecutingAssembly().GetName().Name, null, null, serviceInstanceId: TestSessionId.ToString())
-            .AddAttributes(new Dictionary<string, object>
-            {
-                ["test.session_id"] = TestSessionId.ToString(),
-                ["test.framework.name"] = "xunit",
-                ["test.framework.version"] = typeof(ITestFrameworkExecutionOptions).Assembly.GetName().Version?.ToString() ?? "unknown"
-            });
-    }
 }
