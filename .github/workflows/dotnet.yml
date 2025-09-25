@@ -23,7 +23,7 @@ jobs:
     - name: 🩺 Start Otel Collector
       run: >
         mkdir -p ${{runner.temp}}/test-results/otel/;
-        chmod -R a=rw ${{runner.temp}}/test-results/otel/;
+        chmod -R 777 ${{runner.temp}}/test-results/otel/;
         docker run --rm
         -p 4317:4317
         -v ${{runner.temp}}/test-results/otel/:/mnt/otel-export
