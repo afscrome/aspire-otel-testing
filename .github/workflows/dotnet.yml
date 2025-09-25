@@ -25,6 +25,7 @@ jobs:
         mkdir -p ${{runner.temp}}/test-results/otel/;
         chmod -R 777 ${{runner.temp}}/test-results/otel/;
         docker run --rm
+        -d
         -p 4317:4317
         -v ${{runner.temp}}/test-results/otel/:/mnt/otel-export
         -v ./otel-exporter.yaml:/mnt/otel-config.yaml
