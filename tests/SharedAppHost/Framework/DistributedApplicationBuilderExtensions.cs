@@ -41,6 +41,7 @@ public static class DistributedApplicationBuilderExtensions
                 var resourceBuilder = ResourceBuilder.CreateDefault();
                 OtelHelper.ConfigureResource(resourceBuilder);
                 x.IncludeFormattedMessage = true;
+                x.IncludeScopes = true;
                 x.AddOtlpExporter();
                 x.SetResourceBuilder(resourceBuilder);
             });
