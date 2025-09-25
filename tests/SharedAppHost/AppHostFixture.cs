@@ -23,11 +23,13 @@ public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
         appHost.Services.AddLogging(logging =>
         {
             logging.SetMinimumLevel(LogLevel.Debug);
-            //logging.AddFilter(appHost.Environment.ApplicationName, LogLevel.Debug);
+            logging.AddFilter(appHost.Environment.ApplicationName, LogLevel.Error);
             logging.AddFilter("Aspire.", LogLevel.Debug);
             logging.AddFilter("Microsoft.", LogLevel.Debug);
             logging.AddFilter(typeof(AppHostFixture).Namespace, LogLevel.Debug);
         });
+
+        TestContext.Current.AddAttachment("hello", "world");
 
         ConfigureOtel(appHost);
 
@@ -38,6 +40,7 @@ public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
         await App.StartAsync(cts.Token);
         logger.LogInformation("App Host started");
 
+        cts.Cancel();
         //wait for all resources to go healthy
         await Task.WhenAll(appHost.Resources.Select(WaitForHealthy));
 
@@ -49,16 +52,17 @@ public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
                 await App.ResourceNotifications.WaitForResourceHealthyAsync(resource.Name, cts.Token);
                 logger.LogInformation("{Resource} is healthy", resource.Name);
             }
-            catch (OperationCanceledException ex) //when (ex.CancellationToken == cts.Token)
+            catch (OperationCanceledException)
             {
                 if (App.ResourceNotifications.TryGetCurrentState(resource.Name, out var state))
                 {
-                    throw new TimeoutException($"{resource.Name} failed to become healthy. Health {state.Snapshot.HealthStatus}, State: {state.Snapshot.State},", ex);
+                    logger.LogError("{Resource} failed to become healthy. {Health} {State} {HealthReports}", resource.Name, state.Snapshot.HealthStatus, state.Snapshot.State, state.Snapshot.HealthReports);
                 }
                 else
                 {
-                    throw new TimeoutException($"{resource.Name} failed to become healthy - unable to determine current state", ex);
+                    logger.LogError("{Resource} failed to become healthy - Unable to determine state", resource.Name);
                 }
+                throw;
             }
         }
     }
