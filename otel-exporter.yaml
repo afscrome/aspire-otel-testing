@@ -10,7 +10,7 @@
   file/export:
     path: /mnt/otel-export/otel.json
     group_by:
-      enabled: true
+      # enabled: true
       resource_attribute: test.session.id
 
 receivers:
