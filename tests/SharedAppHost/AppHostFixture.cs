@@ -24,7 +24,6 @@ public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
         {
             //TODO: Can we get the test results directory from xunit instead of repeating it
             appHost.WithResourceFileLogging(Path.Combine(dcpLogDir, ".."));
-
         }
 
 

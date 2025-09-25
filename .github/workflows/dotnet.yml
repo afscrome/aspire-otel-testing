@@ -20,13 +20,13 @@ jobs:
       uses: actions/checkout@v4
     - name: 🐳 Docker status
       run: docker info
-    - name: 🔒 Trust Dev Cert
-      run: sudo dotnet dev-certs https --trust
     - name: ⚙️ Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 10.0.x
         dotnet-quality: 'preview'
+    - name: 🔒 Trust Dev Cert
+      run: sudo dotnet dev-certs https --trust
     - name: 📦 Restore dependencies
       run: dotnet restore
     - name: 🛠️ Build
