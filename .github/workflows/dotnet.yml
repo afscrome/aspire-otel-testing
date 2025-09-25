@@ -30,6 +30,10 @@ jobs:
       run: dotnet build
     - name: 🧪 Test
       run: dotnet test --no-build --results-directory ${{env.TEST_RESULTS_DIR}} --long-running 30 --timeout 1m
+      env:
+        DCP_DIAGNOSTICS_LOG_LEVEL: debug
+        DCP_DIAGNOSTICS_LOG_FOLDER: $TEST_RESULTS_DIR/dcp
+        DCP_PRESERVE_EXECUTABLE_LOGS: 1      
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
