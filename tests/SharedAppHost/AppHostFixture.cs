@@ -38,7 +38,6 @@ public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
         App = await appHost.BuildAsync(cts.Token);
  
         await App.StartWithLoggingAsync(cts.Token);
-        throw new Exception();
     }
 
 
