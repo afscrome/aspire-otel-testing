@@ -25,7 +25,7 @@ jobs:
         docker run --rm
         -p 4317:4317
         -v ${{runner.temp}}/test-results/otel/:/mnt/otel-export
-        -v otel-exporter.yaml:/mnt/otel-config.yaml
+        -v ./otel-exporter.yaml:/mnt/otel-config.yaml
         -e ASPIRE_ENDPOINT=http://host.docker.internal:14317
         otel/opentelemetry-collector-contrib:latest
         --config /mnt/otel-config.yaml
