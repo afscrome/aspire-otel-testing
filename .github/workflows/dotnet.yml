@@ -21,7 +21,7 @@ jobs:
     - name: 🐳 Docker status
       run: docker info
     - name: 🩺 Start Otel Collector
-      run: | 
+      run: >
         docker run --rm -it
         -p 4317:4317
         -v ${{runner.temp}}/test-results/otel/:/mnt/otel-export
