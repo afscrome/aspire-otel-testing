@@ -22,13 +22,13 @@ jobs:
       run: docker info
     - name: 🩺 Start Otel Collector
       run: >
+        mkdir -p ${{runner.temp}}/test-results/otel/;
+        chmod -r a=rw ${{runner.temp}}/test-results/otel/;
         docker run --rm
         -p 4317:4317
         -v ${{runner.temp}}/test-results/otel/:/mnt/otel-export
         -v ./otel-exporter.yaml:/mnt/otel-config.yaml
         -e ASPIRE_ENDPOINT=http://host.docker.internal:14317
-        -u $(id -u)
-        -g $(id -g)
         otel/opentelemetry-collector-contrib:latest
         --config /mnt/otel-config.yaml
     - name: ⚙️ Setup .NET
