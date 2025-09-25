@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: 🧮 Calculate env vars
-      run: echo TEST_RESULTS_DIR=${{runner.temp}}test-results >> $GITHUB_ENV
+      run: echo TEST_RESULTS_DIR=${{runner.temp}}/test-results >> $GITHUB_ENV
     - name: 📥 Checkout
       uses: actions/checkout@v4
     - name: 🐳 Docker status
@@ -29,14 +29,14 @@ jobs:
     - name: 🛠️ Build
       run: dotnet build
     - name: 🧪 Test
-      run: dotnet test --no-build --results-directory ${{env.TEST_RESULTS_DIR}} --long-running 30 --timeout 1m
+      run: dotnet test --no-build --results-directory ${{runner.temp}}/test-results --long-running 30 --timeout 1m
       env:
         DCP_DIAGNOSTICS_LOG_LEVEL: debug
-        DCP_DIAGNOSTICS_LOG_FOLDER: $TEST_RESULTS_DIR/dcp
+        DCP_DIAGNOSTICS_LOG_FOLDER: ${{runner.temp}}/test-results/dcp
         DCP_PRESERVE_EXECUTABLE_LOGS: 1      
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
         name: test-results
-        path: ${{env.TEST_RESULTS_DIR}}
+        path: ${{runner.temp}}/test-results
