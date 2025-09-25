@@ -6,8 +6,6 @@
 		<Nullable>enable</Nullable>
 		<IsPackable>false</IsPackable>
 		<IsTestProject>true</IsTestProject>
-		<UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
-		<TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -21,6 +19,9 @@
 		<PackageReference Include="OpenTelemetry.Instrumentation.Http" />
 		<PackageReference Include="xunit.runner.visualstudio" />
 		<PackageReference Include="xunit.v3" />
+		<!--
+		<PackageReference Include="Microsoft.Testing.Extensions.TrxReport"/>
+		-->
 	</ItemGroup>
 
 	<ItemGroup>

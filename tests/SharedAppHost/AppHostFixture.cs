@@ -2,9 +2,7 @@
 using Microsoft.Extensions.Logging;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Resources;
-using Projects;
 using System.Diagnostics;
-using System.Security.Cryptography.Xml;
 
 namespace SharedAppHost;
 
@@ -16,24 +14,52 @@ public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
     public async ValueTask InitializeAsync()
     {
         using var _ = Source.StartActivity("AppHostFixture.InitializeAsync");
-        var cancellationToken = TestContext.Current.CancellationToken;
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(60));
 
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.AppHost>();
 
         //TODO: Sync this resource up with the xunit fixture wide resoruce
-
         appHost.Services.AddLogging(logging =>
         {
             logging.SetMinimumLevel(LogLevel.Debug);
             logging.AddFilter(appHost.Environment.ApplicationName, LogLevel.Debug);
             logging.AddFilter("Aspire.", LogLevel.Debug);
+            logging.AddFilter(typeof(AppHostFixture).Namespace, LogLevel.Debug);
         });
 
         ConfigureOtel(appHost);
 
-        App = await appHost.BuildAsync(cancellationToken);
+        App = await appHost.BuildAsync(cts.Token);
+        var logger = App.Services.GetRequiredService<ILoggerFactory>().CreateLogger<AppHostFixture>();
 
-        await App.StartAsync(cancellationToken);
+        logger.LogInformation("Starting App Host");
+        await App.StartAsync(cts.Token);
+        logger.LogInformation("App Host started");
+
+        //wait for all resources to go healthy
+        await Task.WhenAll(appHost.Resources.Select(WaitForHealthy));
+
+        async Task WaitForHealthy(IResource resource)
+        {
+            try
+            {
+                logger.LogInformation("Waiting for {Resource} to become healthy", resource.Name);
+                await App.ResourceNotifications.WaitForResourceHealthyAsync(resource.Name, cts.Token);
+                logger.LogInformation("{Resource} is healthy", resource.Name);
+            }
+            catch (OperationCanceledException ex) //when (ex.CancellationToken == cts.Token)
+            {
+                if (App.ResourceNotifications.TryGetCurrentState(resource.Name, out var state))
+                {
+                    throw new TimeoutException($"{resource.Name} failed to become healthy. Health {state.Snapshot.HealthStatus}, State: {state.Snapshot.State},", ex);
+                }
+                else
+                {
+                    throw new TimeoutException($"{resource.Name} failed to become healthy - unable to determine current state", ex);
+                }
+            }
+        }
     }
 
 
