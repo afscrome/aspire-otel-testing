@@ -25,6 +25,7 @@ public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
             logging.SetMinimumLevel(LogLevel.Debug);
             logging.AddFilter(appHost.Environment.ApplicationName, LogLevel.Debug);
             logging.AddFilter("Aspire.", LogLevel.Debug);
+            logging.AddFilter("Microsoft.", LogLevel.Debug);
             logging.AddFilter(typeof(AppHostFixture).Namespace, LogLevel.Debug);
         });
 
