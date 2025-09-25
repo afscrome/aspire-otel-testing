@@ -16,17 +16,19 @@ jobs:
       TEST_RESULTS_DIR: $RUNNER_TEMP/test-results/
     steps:
     - uses: actions/checkout@v4
-    - name: Setup .NET
+    - name: ⚙️ Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 9.0.x
-    - name: Restore dependencies
+    - name: 📦 Restore dependencies
       run: dotnet restore
-    - name: Build
+    - name: 🛠️ Build
       run: dotnet build
-    - name: Test
-      run: dotnet test --no-build --results-directory ${{env.TEST_RESULTS_DIR}}
-    - uses: actions/upload-artifact@v4
+    - name: 🧪 Test
+      run: dotnet test --no-build --results-directory ${{env.TEST_RESULTS_DIR}} --long-running 1m
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
       with:
         name: test-results
         path: ${{env.TEST_RESULTS_DIR}}
