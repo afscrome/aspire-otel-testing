@@ -1,20 +1,12 @@
-using Aspire.Hosting.ApplicationModel;
 using OpenTelemetry;
-using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using PracticalOtel.xUnit.v3.OpenTelemetry;
-using Projects;
-using SharedAppHost;
 using System.Diagnostics;
-using System.Reflection;
-using Xunit.Sdk;
-using Xunit.v3;
 
-[assembly: TestPipelineStartup(typeof(OtelTestFramework))]
+namespace Common;
 
-namespace SharedAppHost;
-
-public class OtelTestFramework : TracedPipelineStartup {
+public class OtelTestFramework : TracedPipelineStartup
+{
 
     static OtelTestFramework()
     {
@@ -32,10 +24,31 @@ public class OtelTestFramework : TracedPipelineStartup {
     {
         traceProviderSetup = tpb => tpb
             .AddSource("*")
+            .AddProcessor(new DcpNoiseScrubber())
             .ConfigureResource(OtelHelper.ConfigureResource)
             ;
     }
 
+
+    public class DcpNoiseScrubber : BaseProcessor<Activity>
+    {
+        public override void OnEnd(Activity activity)
+        {
+            var url = activity.Tags.FirstOrDefault(kv => kv.Key == "url.full").Value;
+
+            if (url == null)
+            {
+                return;
+            }
+
+            if (url.Contains("apis/usvc-dev.developer.microsoft.com") || url.Contains("/DCP/"))
+            {
+                // Console.WriteLine($"DCP Noise scrubber dropping {data.DisplayName} {url}");
+                activity.IsAllDataRequested = false;
+                activity.ActivityTraceFlags &= ~ActivityTraceFlags.Recorded;
+            }
+        }
+    }
 
 
 }

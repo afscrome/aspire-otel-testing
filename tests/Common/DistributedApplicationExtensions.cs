@@ -1,14 +1,16 @@
 ﻿using Aspire.Hosting;
+using Aspire.Hosting.ApplicationModel;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace SharedAppHost.Framework;
+namespace Common;
 
 public static class DistributedApplicationExtensions
 {
     public static async Task StartWithLoggingAsync(this DistributedApplication app, CancellationToken cancellationToken)
     {
         var model = app.Services.GetRequiredService<DistributedApplicationModel>();
-        var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger<AppHostFixture>();
+        var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("AppHostFixture");
 
         cancellationToken.ThrowIfCancellationRequested();
 

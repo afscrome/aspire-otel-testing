@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Aspire.Hosting.ApplicationModel;
+using Microsoft.Extensions.Hosting;
 
-namespace SharedAppHost.Framework;
+namespace Common;
 
 // Based on https://github.com/dotnet/aspire/blob/main/src/Aspire.Hosting/ResourceLoggerForwarderService.cs
 internal class ResourceFileLogger(ResourceNotificationService resourceNotificationService,

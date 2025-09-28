@@ -10,6 +10,8 @@
     <Project Path="src/Web/Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/AppHostPerTest/AppHostPerTest.csproj" Id="b8c11a4c-8d28-4d63-a500-b5dbcca442b9" />
+    <Project Path="tests/Common/Common.csproj" Id="1eb39144-40dd-4ded-8d8a-0c29a4ad160f" />
 	  <Project Path="tests/SharedAppHost/SharedAppHost.csproj" />
   </Folder>
 </Solution>

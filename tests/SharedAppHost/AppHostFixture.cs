@@ -1,14 +1,15 @@
 ﻿using Aspire.Hosting;
 using Microsoft.Extensions.Logging;
-using SharedAppHost.Framework;
+using Common;
 using System.Diagnostics;
 
 namespace SharedAppHost;
 
 public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
 {
+    private static readonly ActivitySource Source = new("AppHostFixture");
+
     public DistributedApplication App { get; private set; } = default!;
-    ActivitySource Source = new("AppHostFixture");
 
     public async ValueTask InitializeAsync()
     {
@@ -16,36 +17,16 @@ public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         cts.CancelAfter(TimeSpan.FromSeconds(30));
 
-        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.AppHost>();
-
-        appHost.WithOpenTelemetry();
-
-        if (Environment.GetEnvironmentVariable("DCP_DIAGNOSTICS_LOG_FOLDER") is { Length: > 0 } dcpLogDir)
-        {
-            //TODO: Can we get the test results directory from xunit instead of repeating it
-            appHost.WithResourceFileLogging(Path.Combine(dcpLogDir, "../resources"));
-        }
-
-
-        appHost.Services.AddLogging(logging =>
-        {
-            logging.SetMinimumLevel(LogLevel.Debug);
-            logging.AddFilter("Aspire.", LogLevel.Information);
-            logging.AddFilter("Microsoft.", LogLevel.Information);
-            logging.AddFilter(typeof(AppHostFixture).Namespace, LogLevel.Information);
-        });
+        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.AppHost>(cts.Token);
+        appHost.WithCILogging();
 
         App = await appHost.BuildAsync(cts.Token);
  
         await App.StartWithLoggingAsync(cts.Token);
     }
 
-
-
     public async ValueTask DisposeAsync()
     {
-        TestContext.Current.AddAttachment("Hello", "world");
-
         // HACK: Need to give Projects enough time to flush their telemery
         // Without this, telemetry intermittently goes missing
         await Task.Delay(TimeSpan.FromSeconds(2));

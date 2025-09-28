@@ -1,12 +1,36 @@
 ﻿using Aspire.Hosting;
+using Aspire.Hosting.ApplicationModel;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Resources;
 
-namespace SharedAppHost.Framework;
+namespace Common;
 
 public static class DistributedApplicationBuilderExtensions
 {
+    public static T WithCILogging<T>(this T builder)
+        where T : IDistributedApplicationBuilder
+    {
+        builder.WithOpenTelemetry();
+
+        builder.Services.AddLogging(logging =>
+        {
+            logging.SetMinimumLevel(LogLevel.Debug);
+            logging.AddFilter("", LogLevel.Information);
+        });
+
+        //TODO: Can we get the test results dir from xunit / MTP instead?
+        var dcpLogDir = Environment.GetEnvironmentVariable("DCP_DIAGNOSTICS_LOG_FOLDER");
+        var resourceLogBase = dcpLogDir is { Length: > 0 }
+            ? Path.Combine(dcpLogDir, "..")
+            : Path.Combine(".", "TestResults");
+
+        builder.WithResourceFileLogging(Path.Combine(resourceLogBase, "../resource-logs"));
+
+        return builder;
+    }
+
     public static T WithResourceFileLogging<T>(this T builder, string logDirectory)
         where T : IDistributedApplicationBuilder
     {
@@ -37,12 +61,14 @@ public static class DistributedApplicationBuilderExtensions
         // Only configuring logging here - traces & metrics are handled at process level by xUnit integration
         builder.Services.AddLogging(logging =>
         {
-            logging.AddOpenTelemetry(x => {
-                var resourceBuilder = ResourceBuilder.CreateDefault();
-                OtelHelper.ConfigureResource(resourceBuilder);
+            logging.AddOpenTelemetry(x =>
+            {
                 x.IncludeFormattedMessage = true;
                 x.IncludeScopes = true;
                 x.AddOtlpExporter();
+
+                var resourceBuilder = ResourceBuilder.CreateDefault();
+                OtelHelper.ConfigureResource(resourceBuilder);
                 x.SetResourceBuilder(resourceBuilder);
             });
         });
@@ -63,5 +89,4 @@ public static class DistributedApplicationBuilderExtensions
         return builder;
 
     }
-
 }
