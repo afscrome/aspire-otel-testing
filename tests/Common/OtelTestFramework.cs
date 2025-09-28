@@ -13,6 +13,7 @@ public class OtelTestFramework : TracedPipelineStartup
         //TODO: Listen to otel event source, and record otel failures somewhow
         // https://github.com/open-telemetry/opentelemetry-dotnet-instrumentation/blob/main/src/OpenTelemetry.AutoInstrumentation/Diagnostics/SdkSelfDiagnosticsEventListener.cs
 
+        //TODO: Dont' hardcode env vars like this
         Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", "http://127.0.0.1:4317");
         Environment.SetEnvironmentVariable("OTEL_BSP_SCHEDULE_DELAY", "1000");
         Environment.SetEnvironmentVariable("OTEL_BLRP_SCHEDULE_DELAY", "1000");
