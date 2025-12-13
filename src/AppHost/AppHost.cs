@@ -1,10 +1,26 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var cache = builder.AddRedis("cache");
+/*
+var x = builder.AddContainer("nginx", "nginx")
+    .WithOtlpExporter()
+    .WithLifetime(ContainerLifetime.Persistent);
+*/
+var cache = builder.AddRedis("cache")
+    .WithLifetime(ContainerLifetime.Persistent)
+    .WithOtlpExporter();
 
 var apiService = builder.AddProject<Projects.ApiService>("apiservice")
     .WithHttpHealthCheck("/health")
     ;
+
+try
+{
+    throw new NullReferenceException();
+}
+catch
+{
+    string s = "ddd";
+}
 
 builder.AddProject<Projects.Web>("webfrontend")
     .WithExternalHttpEndpoints()

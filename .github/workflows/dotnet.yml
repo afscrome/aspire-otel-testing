@@ -44,7 +44,7 @@ jobs:
     - name: 🛠️ Build
       run: dotnet build
     - name: 🧪 Test
-      run: dotnet test --no-build --results-directory ${{runner.temp}}/test-results --long-running 30 --timeout 2m --report-xunit-trx --report-xunit-html
+      run: dotnet test --results-directory ${{runner.temp}}/test-results
       env:
         DCP_DIAGNOSTICS_LOG_LEVEL: debug
         DCP_DIAGNOSTICS_LOG_FOLDER: ${{runner.temp}}/test-results/dcp

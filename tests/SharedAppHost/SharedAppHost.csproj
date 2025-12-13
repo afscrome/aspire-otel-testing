@@ -1,11 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net9.0</TargetFramework>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
-		<IsPackable>false</IsPackable>
-		<IsTestProject>true</IsTestProject>
+		<OutputType>exe</OutputType>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -14,12 +10,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.NET.Test.Sdk" />
-		<PackageReference Include="xunit.runner.visualstudio" />
-		<PackageReference Include="xunit.v3" />
-		<!--
-		<PackageReference Include="Microsoft.Testing.Extensions.TrxReport"/>
-		-->
+		<PackageReference Include="xunit.v3.mtp-v2" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -28,12 +19,13 @@
 		<Using Include="Aspire.Hosting.ApplicationModel" />
 		<Using Include="Aspire.Hosting.Testing" />
 		<Using Include="Xunit" />
-	</ItemGroup>
+ 		<Using Include="Xunit.v3" />
+ 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="OTEL_DIAGNOSTICS.json">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
+		<None Update="OTEL_DIAGNOSTICS.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 </Project>

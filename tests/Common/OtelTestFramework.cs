@@ -26,6 +26,7 @@ public class OtelTestFramework : TracedPipelineStartup
         traceProviderSetup = tpb => tpb
             .AddSource("*")
             .AddProcessor(new DcpNoiseScrubber())
+            .SetSampler<DcpNoiseSampler>()
             .ConfigureResource(OtelHelper.ConfigureResource)
             ;
     }
@@ -33,8 +34,29 @@ public class OtelTestFramework : TracedPipelineStartup
 
     public class DcpNoiseScrubber : BaseProcessor<Activity>
     {
+        public override void OnStart(Activity activity)
+        {
+            var url = activity.Tags.FirstOrDefault(kv => kv.Key == "url.full").Value;
+
+            if (url == null)
+            {
+                return;
+            }
+
+            if (url.Contains("apis/usvc-dev.developer.microsoft.com") || url.Contains("/DCP/"))
+            {
+                // Console.WriteLine($"DCP Noise scrubber dropping {data.DisplayName} {url}");
+                activity.IsAllDataRequested = false;
+                activity.ActivityTraceFlags &= ~ActivityTraceFlags.Recorded;
+            }
+        }
         public override void OnEnd(Activity activity)
         {
+            if (activity.OperationName != "System.Net.Http.HttpRequestOut")
+            {
+                return;
+            }
+
             var url = activity.Tags.FirstOrDefault(kv => kv.Key == "url.full").Value;
 
             if (url == null)
@@ -51,5 +73,25 @@ public class OtelTestFramework : TracedPipelineStartup
         }
     }
 
+    public class DcpNoiseSampler : Sampler
+    {
+        public override SamplingResult ShouldSample(in SamplingParameters samplingParameters)
+        {
+            var url = samplingParameters.Tags?.FirstOrDefault(kv => kv.Key == "url.full").Value as string;
 
+            return IsNoise(url)
+                ? new SamplingResult(SamplingDecision.Drop)
+                : new SamplingResult(SamplingDecision.RecordAndSample);
+        }
+
+        bool IsNoise(string? url)
+        {
+            if (url != null && url.Contains("apis/usvc-dev.developer.microsoft.com"))
+            {
+                return true;
+            }
+
+            return false;
+        }
+    }
 }

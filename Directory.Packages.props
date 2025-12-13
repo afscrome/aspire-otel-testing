@@ -1,25 +1,26 @@
 <Project>
-	<PropertyGroup>
-		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-	</PropertyGroup>
-	<ItemGroup>
-		<PackageVersion Include="Aspire.Hosting.AppHost" Version="9.5.0" />
-		<PackageVersion Include="Aspire.Hosting.Redis" Version="9.5.0" />
-		<PackageVersion Include="Aspire.Hosting.Testing" Version="9.5.0" />
-		<PackageVersion Include="CommunityToolkit.Aspire.Hosting.OpenTelemetryCollector" Version="9.8.0-beta.394" />
-		<PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="9.0.6" />
-		<PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="9.7.0" />
-		<PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="9.5.0" />
-		<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-		<PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
-		<PackageVersion Include="xunit.v3" Version="3.0.1" />
-		<PackageVersion Include="PracticalOtel.xUnit.v3.OpenTelemetry" Version="0.2.4-alpha" />
-		<PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.12.0" />
-		<PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.12.0" />
-		<PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.12.0" />
-		<PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.12.0" />
-		<PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.12.0" />
-		<PackageVersion Include="Aspire.StackExchange.Redis.OutputCaching" Version="9.5.0" />
-		<PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.0.0-preview.25465.3" />
-	</ItemGroup>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.0.2" />
+    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.0.2" />
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.0.2" />
+    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.OpenTelemetryCollector" Version="9.8.0-beta.394" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.1.0" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.1.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.1.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="2.0.2" />
+    <PackageVersion Include="xunit.v3.mtp-v2" Version="3.2.1" />
+    <PackageVersion Include="PracticalOtel.xUnit.v3.OpenTelemetry" Version="0.2.4-alpha" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.14.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.14.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.14.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.14.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.14.0" />
+    <PackageVersion Include="Aspire.StackExchange.Redis.OutputCaching" Version="13.0.2" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.0.2" />
+  </ItemGroup>
 </Project>
