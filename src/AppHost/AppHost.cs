@@ -1,10 +1,14 @@
+using Microsoft.Extensions.DependencyInjection;
+
 var builder = DistributedApplication.CreateBuilder(args);
 
-/*
 var x = builder.AddContainer("nginx", "nginx")
     .WithOtlpExporter()
-    .WithLifetime(ContainerLifetime.Persistent);
-*/
+    .WithLifetime(ContainerLifetime.Persistent)
+    .WithHttpEndpoint(targetPort: 80)
+    .WithHttpHealthCheck("/dddd")
+    ;
+
 var cache = builder.AddRedis("cache")
     .WithLifetime(ContainerLifetime.Persistent)
     .WithOtlpExporter();
@@ -12,15 +16,6 @@ var cache = builder.AddRedis("cache")
 var apiService = builder.AddProject<Projects.ApiService>("apiservice")
     .WithHttpHealthCheck("/health")
     ;
-
-try
-{
-    throw new NullReferenceException();
-}
-catch
-{
-    string s = "ddd";
-}
 
 builder.AddProject<Projects.Web>("webfrontend")
     .WithExternalHttpEndpoints()

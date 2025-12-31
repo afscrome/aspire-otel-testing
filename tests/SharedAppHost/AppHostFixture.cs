@@ -1,5 +1,4 @@
 ﻿using Aspire.Hosting;
-using Microsoft.Extensions.Logging;
 using Common;
 using System.Diagnostics;
 
@@ -15,14 +14,14 @@ public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
     {
         using var _ = Source.StartActivity("AppHostFixture.InitializeAsync");
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(TimeSpan.FromSeconds(30));
+        cts.CancelAfter(TimeSpan.FromSeconds(40));
 
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.AppHost>(cts.Token);
         appHost.WithCILogging();
 
         App = await appHost.BuildAsync(cts.Token);
- 
-        await App.StartWithLoggingAsync(cts.Token);
+
+        await App.StartAsync(cts.Token);
     }
 
     public async ValueTask DisposeAsync()

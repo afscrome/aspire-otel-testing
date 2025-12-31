@@ -50,7 +50,7 @@ jobs:
       run: dotnet test --results-directory ${{runner.temp}}/test-results
       env:
         DCP_DIAGNOSTICS_LOG_LEVEL: debug
-        DCP_DIAGNOSTICS_LOG_FOLDER: ${{runner.temp}}/test-results/dcp
+        ASPIRE__TEST__DCPLOGBASEPATH: ${{runner.temp}}/test-results/dcp
         DCP_PRESERVE_EXECUTABLE_LOGS: 1      
     - name: Upload test results
       uses: actions/upload-artifact@v4

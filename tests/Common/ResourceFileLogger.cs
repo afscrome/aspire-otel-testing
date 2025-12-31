@@ -5,29 +5,35 @@ namespace Common;
 
 // Based on https://github.com/dotnet/aspire/blob/main/src/Aspire.Hosting/ResourceLoggerForwarderService.cs
 internal class ResourceFileLogger(ResourceNotificationService resourceNotificationService,
-    ResourceLoggerService resourceLoggerService, string logDirectory) : BackgroundService
+    ResourceLoggerService resourceLoggerService, string logDirectory) : HostedLifecycleServiceBase
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public override Task StartingAsync(CancellationToken cancellationToken)
+    {
+        _ = Watch(cancellationToken);
+        return Task.CompletedTask;
+    }
+
+    public async Task Watch(CancellationToken cancellationToken)
     {
         try
         {
             var loggingResourceIds = new HashSet<string>();
             var logWatchTasks = new List<Task>();
 
-            await foreach (var resourceEvent in resourceNotificationService.WatchAsync(stoppingToken).ConfigureAwait(false))
+            await foreach (var resourceEvent in resourceNotificationService.WatchAsync(cancellationToken).ConfigureAwait(false))
             {
                 var resourceId = resourceEvent.ResourceId;
 
                 if (loggingResourceIds.Add(resourceId))
                 {
                     // Start watching the logs for this resource ID
-                    logWatchTasks.Add(WatchResourceLogs(resourceEvent.Resource, resourceId, stoppingToken));
+                    logWatchTasks.Add(WatchResourceLogs(resourceEvent.Resource, resourceId, cancellationToken));
                 }
             }
 
             await Task.WhenAll(logWatchTasks);
         }
-        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             // this was expected as the token was canceled
         }
@@ -40,8 +46,12 @@ internal class ResourceFileLogger(ResourceNotificationService resourceNotificati
 
         var logPath = Path.Combine(directory.FullName, $"{resource.Name}-{resourceId}.log");
 
-        using var logFileStream = new FileStream(logPath, FileMode.Create, FileAccess.Write);
-        using var writer = new StreamWriter(logFileStream);
+        using var logFileStream = new FileStream(logPath, FileMode.Create, FileAccess.Write, FileShare.Read);
+        using var writer = new StreamWriter(logFileStream)
+        {
+            AutoFlush = true,
+
+        };
 
         try
         {

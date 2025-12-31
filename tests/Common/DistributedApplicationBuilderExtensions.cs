@@ -13,15 +13,26 @@ public static class DistributedApplicationBuilderExtensions
         where T : IDistributedApplicationBuilder
     {
         builder.WithOpenTelemetry();
+        builder.Services.AddHostedService<FinalStateLoggerService>();
+        builder.Services.AddHostedService<StartupTimeoutService>();
 
         builder.Services.AddLogging(logging =>
         {
-            logging.SetMinimumLevel(LogLevel.Debug);
-            logging.AddFilter("", LogLevel.Information);
+            logging.SetMinimumLevel(LogLevel.Debug)
+                .AddFilter("", LogLevel.Information)
+                .AddFilter("Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService", LogLevel.Information)
+                .AddNUnit()
+                .AddSimpleConsole(x =>
+                {
+                    x.SingleLine = true;
+                    x.TimestampFormat = "[HH:mm:ss]: ";
+                });
         });
 
+        builder.Configuration["DcpPublisher:DependencyCheckTimeout"] = "5";
+
         //TODO: Can we get the test results dir from xunit / MTP instead?
-        var dcpLogDir = Environment.GetEnvironmentVariable("DCP_DIAGNOSTICS_LOG_FOLDER");
+        var dcpLogDir = Environment.GetEnvironmentVariable("ASPIRE:TEST:DCPLOGBASEPATH");
         var resourceLogBase = dcpLogDir is { Length: > 0 }
             ? Path.Combine(dcpLogDir, "..")
             : Path.Combine(".", "TestResults");

@@ -10,12 +10,12 @@ namespace AppHostPerTest.Tests
         {
             var cancellationToken = TestContext.Current.CancellationToken;
 
-            var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.AppHost>(cancellationToken);
+            await using var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.AppHost>(cancellationToken);
             appHost.WithCILogging();
             
             var app = await appHost.BuildAsync(cancellationToken);
 
-            await app.StartWithLoggingAsync(cancellationToken);
+            await app.StartAsync(cancellationToken);
 
             // Act
             await app.ResourceNotifications.WaitForResourceHealthyAsync("webfrontend", cancellationToken);
