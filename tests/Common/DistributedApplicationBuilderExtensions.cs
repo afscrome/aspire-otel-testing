@@ -80,12 +80,14 @@ public static class DistributedApplicationBuilderExtensions
         where T : IDistributedApplicationBuilder
     {
         //TODO: Can we get the test results dir from xunit / MTP instead?
-        var dcpLogDir = Environment.GetEnvironmentVariable("ASPIRE:TEST:DCPLOGBASEPATH");
-        var resourceLogBase = dcpLogDir is { Length: > 0 }
-            ? Path.Combine(dcpLogDir, "..")
-            : Path.Combine(".", "TestResults");
+        var dcpLogDir = builder.Configuration["ASPIRE:TEST:DCPLOGBASEPATH"];
 
-        return builder.WithResourceFileLogging(Path.Combine(resourceLogBase, "../resource-logs"));
+        if (string.IsNullOrWhiteSpace(dcpLogDir))
+        {
+            return builder;
+        }
+
+        return builder.WithResourceFileLogging(Path.Combine(dcpLogDir, "../resource-logs"));
     }
 
     public static T WithResourceFileLogging<T>(this T builder, string logDirectory)
