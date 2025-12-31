@@ -16,7 +16,7 @@ public static class DistributedApplicationBuilderExtensions
         where T : IDistributedApplicationBuilder
     {
         builder.Configuration["DcpPublisher:DependencyCheckTimeout"] = "5";
-        builder.Configuration["ASPIRE_ENABLE_CONTAINER_TUNNEL"] = "true";
+        //builder.Configuration["ASPIRE_ENABLE_CONTAINER_TUNNEL"] = "true";
 
         return builder
             .WithTestLogging()
