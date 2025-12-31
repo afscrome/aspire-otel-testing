@@ -13,6 +13,7 @@ public static class DistributedApplicationBuilderExtensions
         where T : IDistributedApplicationBuilder
     {
         builder.Configuration["DcpPublisher:DependencyCheckTimeout"] = "5";
+        builder.Configuration["ASPIRE_ENABLE_CONTAINER_TUNNEL"] = "true";
 
         return builder
             .WithTestLogging()
@@ -35,6 +36,8 @@ public static class DistributedApplicationBuilderExtensions
                 {
                     x.SingleLine = true;
                     x.TimestampFormat = "[HH:mm:ss] ";
+                    //TODO: Only set for CI?
+                    x.ColorBehavior = Microsoft.Extensions.Logging.Console.LoggerColorBehavior.Disabled;
                 });
         });
 
