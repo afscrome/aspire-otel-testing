@@ -20,7 +20,17 @@ public static class DistributedApplicationBuilderExtensions
             .WithFinalStateLogging()
             .WithStartupTimeout(TimeSpan.FromMinutes(5))
             .WithResourceFileLogging()
-            .WithOpenTelemetry();
+            .WithOpenTelemetry()
+            .WithTempAspireStore();
+    }
+
+    private static T WithTempAspireStore<T>(this T builder, string? path = null)
+        where T : IDistributedApplicationBuilder
+    {
+        // We create the Aspire Store in a folder with user-only access. This way non-root containers won't be able
+        // to access the files unless they correctly assign the required permissions for the container to work.
+        builder.Configuration["Aspire:Store:Path"] = path ?? Directory.CreateTempSubdirectory().FullName;
+        return builder;
     }
 
     public static T WithTestLogging<T>(this T builder)
