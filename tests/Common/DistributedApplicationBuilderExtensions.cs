@@ -1,9 +1,12 @@
 ﻿using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
+using Aspire.Hosting.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Resources;
+using Xunit;
 
 namespace Common;
 
@@ -19,6 +22,7 @@ public static class DistributedApplicationBuilderExtensions
             .WithTestLogging()
             .WithFinalStateLogging()
             .WithStartupTimeout(TimeSpan.FromMinutes(5))
+            .WithDcpLogging()
             .WithResourceFileLogging()
             .WithOpenTelemetry()
             .WithTempAspireStore();
@@ -80,14 +84,42 @@ public static class DistributedApplicationBuilderExtensions
         where T : IDistributedApplicationBuilder
     {
         //TODO: Can we get the test results dir from xunit / MTP instead?
-        var dcpLogDir = builder.Configuration["ASPIRE:TEST:DCPLOGBASEPATH"];
+        //TODO: This is a dependency on calling WithDcpLogging first - can we improve that?
+        var dcpLogDir = builder.Configuration["DcpPublisher:DiagnosticsLogFolder"];
 
         if (string.IsNullOrWhiteSpace(dcpLogDir))
         {
             return builder;
         }
 
-        return builder.WithResourceFileLogging(Path.Combine(dcpLogDir, "../resource-logs"));
+        return builder.WithResourceFileLogging(Path.Combine(dcpLogDir, "resource-logs"));
+    }
+
+    public static T WithResourceCleanUp<T>(this T builder, bool? resourceCleanup = null)
+        where T : IDistributedApplicationBuilder
+    {
+        builder.Configuration["DcpPublisher:WaitForResourceCleanup"] = resourceCleanup.ToString();
+        return builder;
+    }
+
+    public static T WithDcpLogging<T>(this T builder)
+        where T : IDistributedApplicationBuilder
+    {
+        // Use Aspire:Test:DcpLogBasePath as the base path (set externally, e.g., in CI via env var ASPIRE__TEST__DCPLOGBASEPATH)
+        var baseDcpLogFolder = builder.Configuration["Aspire:Test:DcpLogBasePath"];
+        if (!string.IsNullOrEmpty(baseDcpLogFolder))
+        {
+            var uniqueId = Guid.NewGuid().ToString("N")[..8];
+            var uniqueFolder = Path.Combine(baseDcpLogFolder, uniqueId);
+            builder.Configuration["DcpPublisher:DiagnosticsLogFolder"] = uniqueFolder;
+            builder.Configuration["DcpPublisher:DiagnosticsLogLevel"] = "debug";
+            builder.Configuration["DcpPublisher:PreserveExecutableLogs"] = "true";
+
+            // Register as hosted service to forward DCP logs to test output when app stops
+            //services.AddSingleton<IHostedService>(sp => new DcpLogForwarder(testOutputHelper, uniqueFolder));
+        }
+
+        return builder;
     }
 
     public static T WithResourceFileLogging<T>(this T builder, string logDirectory)
