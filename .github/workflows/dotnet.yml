@@ -44,7 +44,7 @@ jobs:
 
     # See https://github.com/dotnet/aspire/issues/13720
     - name: 🤔 Work around persistent resource generated password
-      run: dotnet user-secrets --project src/AppHost set 'Parameters:cache-password' "aA1?$(new-guid)"
+      run: dotnet user-secrets --project src/AppHost set 'Parameters:cache-password' "aA1?$(openssl rand -base64 24)"
 
     - name: 📦 Restore dependencies
       run: dotnet restore
