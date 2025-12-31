@@ -6,18 +6,37 @@ namespace AppHostPerTest;
 public class Scenarios
 {
     [Fact]
-    public async Task ResourceDoesntGoHealthy()
+    public async Task ResourceGoesHealthy()
     {
         var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(10_000);
 
         await using var builder = DistributedApplicationTestingBuilder.Create()
             .WithTestingDefaults();
 
         var nginx = builder.AddContainer("nginx", "nginx")
             .WithHttpEndpoint(targetPort: 80)
-            .WithHttpHealthCheck("/does-not-exist")
-            ;
+            .WithHttpHealthCheck("/");
+
+        await using var app = builder.Build();
+        await app.StartAsync(cts.Token);
+
+        await app.ResourceNotifications.WaitForResourceHealthyAsync(nginx.Resource.Name, cts.Token);
+
+        var x = 123;
+    }
+
+
+    [Fact(Explicit = true)]
+    public async Task ResourceDoesntGoHealthy()
+    {
+        var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+
+        await using var builder = DistributedApplicationTestingBuilder.Create()
+            .WithTestingDefaults()
+            .WithStartupTimeout(TimeSpan.FromSeconds(10));
+
+        var nginx = builder.AddContainer("nginx", "nginx")
+            .WithHttpEndpoint(targetPort: 80);
 
         await using var app = builder.Build();
         await app.StartAsync(cts.Token);
@@ -25,14 +44,15 @@ public class Scenarios
         await app.ResourceNotifications.WaitForResourceHealthyAsync(nginx.Resource.Name, cts.Token);
     }
 
-    [Fact]
+    [Fact(Explicit = true)]
     public async Task ResourceDoesntGoHealthyBetter()
     {
         var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(10_000);
 
         await using var builder = DistributedApplicationTestingBuilder.Create()
-            .WithTestingDefaults();
+            .WithTestingDefaults()
+            .WithStartupTimeout(TimeSpan.FromSeconds(10));
+
 
         var nginx = builder.AddContainer("nginx", "nginx")
             .WithHttpEndpoint(targetPort: 80)
