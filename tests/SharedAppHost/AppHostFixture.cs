@@ -14,7 +14,7 @@ public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
     {
         using var _ = Source.StartActivity("AppHostFixture.InitializeAsync");
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(TimeSpan.FromMinutes(5));
+        cts.CancelAfter(TimeSpan.FromMinutes(2));
 
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.AppHost>(cts.Token);
         appHost.WithTestingDefaults();
