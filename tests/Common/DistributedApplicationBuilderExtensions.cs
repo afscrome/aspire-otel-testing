@@ -9,52 +9,89 @@ namespace Common;
 
 public static class DistributedApplicationBuilderExtensions
 {
-    public static T WithCILogging<T>(this T builder)
+    public static T WithTestingDefaults<T>(this T builder)
         where T : IDistributedApplicationBuilder
     {
-        builder.WithOpenTelemetry();
-        builder.Services.AddHostedService<FinalStateLoggerService>();
-        builder.Services.AddHostedService<StartupTimeoutService>();
+        builder.Configuration["DcpPublisher:DependencyCheckTimeout"] = "5";
 
+        return builder
+            .WithTestLogging()
+            .WithFinalStateLogging()
+            .WithStartupTimeout(TimeSpan.FromMinutes(5))
+            .WithResourceFileLogging()
+            .WithOpenTelemetry();
+    }
+
+    public static T WithTestLogging<T>(this T builder)
+        where T : IDistributedApplicationBuilder
+    {
         builder.Services.AddLogging(logging =>
         {
             logging.SetMinimumLevel(LogLevel.Debug)
                 .AddFilter("", LogLevel.Information)
+                // See: https://github.com/dotnet/aspire/issues/13714
                 .AddFilter("Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService", LogLevel.Information)
-                .AddNUnit()
                 .AddSimpleConsole(x =>
                 {
                     x.SingleLine = true;
-                    x.TimestampFormat = "[HH:mm:ss]: ";
+                    x.TimestampFormat = "[HH:mm:ss] ";
                 });
         });
 
-        builder.Configuration["DcpPublisher:DependencyCheckTimeout"] = "5";
 
+#pragma warning disable EXTEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        // Remove Default resiliency adding noise to health checks - https://github.com/dotnet/aspire/issues/6788
+        builder.Services.ConfigureHttpClientDefaults(x => x.RemoveAllResilienceHandlers());
+#pragma warning restore EXTEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+
+        return builder;
+    }
+
+
+    public static T WithFinalStateLogging<T>(this T builder)
+        where T : IDistributedApplicationBuilder
+    { 
+        builder.Services.AddHostedService<FinalStateLoggerService>();
+        return builder;
+    }
+
+    public static T WithStartupTimeout<T>(this T builder, TimeSpan timeout)
+        where T : IDistributedApplicationBuilder
+    {
+        builder.Services.AddHostedService<StartupTimeoutService>();
+        builder.Services.Configure<StartupTimeoutOptions>(x => x.Timeout = timeout);
+        return builder;
+    }
+
+    public static T WithResourceFileLogging<T>(this T builder)
+        where T : IDistributedApplicationBuilder
+    {
         //TODO: Can we get the test results dir from xunit / MTP instead?
         var dcpLogDir = Environment.GetEnvironmentVariable("ASPIRE:TEST:DCPLOGBASEPATH");
         var resourceLogBase = dcpLogDir is { Length: > 0 }
             ? Path.Combine(dcpLogDir, "..")
             : Path.Combine(".", "TestResults");
 
-        builder.WithResourceFileLogging(Path.Combine(resourceLogBase, "../resource-logs"));
-
-        return builder;
+        return builder.WithResourceFileLogging(Path.Combine(resourceLogBase, "../resource-logs"));
     }
 
     public static T WithResourceFileLogging<T>(this T builder, string logDirectory)
         where T : IDistributedApplicationBuilder
     {
-        builder.Services.AddHostedService(x => ActivatorUtilities.CreateInstance<ResourceFileLogger>(x, logDirectory));
-
-        builder.Services.AddLogging(logging =>
+        if (string.IsNullOrWhiteSpace(logDirectory))
         {
-            // Suppress the resources form the main aspire logger since we're writing them to file
-            logging.AddFilter($"{builder.Environment.ApplicationName}.Resources", LogLevel.None);
-        });
+            return builder;
+        }
+
+        builder.Services.AddHostedService<ResourceFileLoggerHostedLifecycleService>()
+            .Configure<ResourceFileLoggerOptions>(x => x.LogDirectory = logDirectory);
+
+        // Suppress the resources form the main aspire logger since we're writing them to file
+        builder.Services.AddLogging(x => x.AddFilter($"{builder.Environment.ApplicationName}.Resources", LogLevel.None));
 
         return builder;
     }
+
 
     public static T WithOpenTelemetry<T>(this T builder)
         where T : IDistributedApplicationBuilder

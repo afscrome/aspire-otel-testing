@@ -1,7 +1,6 @@
 using Common;
-using Microsoft.Extensions.Logging;
 
-namespace AppHostPerTest.Tests
+namespace AppHostPerTest
 {
     public class IntegrationTest1
     {
@@ -11,7 +10,7 @@ namespace AppHostPerTest.Tests
             var cancellationToken = TestContext.Current.CancellationToken;
 
             await using var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.AppHost>(cancellationToken);
-            appHost.WithCILogging();
+            appHost.WithTestingDefaults();
             
             var app = await appHost.BuildAsync(cancellationToken);
 

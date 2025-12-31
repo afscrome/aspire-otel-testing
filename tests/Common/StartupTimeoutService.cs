@@ -1,28 +1,36 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Common;
 
-public class StartupTimeoutService(ILogger<StartupTimeoutService> logger, IHostApplicationLifetime applicationLifetime)
+public class StartupTimeoutService(ILogger<StartupTimeoutService> logger, IHostApplicationLifetime applicationLifetime, IOptions<StartupTimeoutOptions> options)
     : HostedLifecycleServiceBase
 {
     public override Task StartingAsync(CancellationToken cancellationToken)
     {
-        _ = Task.Run(async () =>
+        var timeout = options.Value.Timeout;
+        var timeoutCts = new CancellationTokenSource(timeout);
+
+        var timeoutRegistration = timeoutCts.Token.Register(() =>
         {
-            try
+            if (logger.IsEnabled(LogLevel.Critical))
             {
-                await Task.Delay(TimeSpan.FromSeconds(20), applicationLifetime.ApplicationStarted);
+                logger.LogCritical("App failed to start within {Timeout}", timeout);
             }
-            catch (OperationCanceledException ex) when (ex.CancellationToken == applicationLifetime.ApplicationStarted)
-            {
-                logger.LogInformation("Application started successfully within the timeout period");
-                return;
-            }
-            logger.LogCritical("App failed to start in time");
             applicationLifetime.StopApplication();
-        }, applicationLifetime.ApplicationStarted);
+        });
+
+        applicationLifetime.ApplicationStarted.Register(() =>
+        {
+            timeoutRegistration.Unregister();
+        });
 
         return Task.CompletedTask;
     }
+}
+
+public class StartupTimeoutOptions
+{
+    public TimeSpan Timeout { get; set; } = TimeSpan.FromMinutes(5);
 }

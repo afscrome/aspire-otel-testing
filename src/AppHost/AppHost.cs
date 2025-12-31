@@ -2,7 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-var x = builder.AddContainer("nginx", "nginx")
+builder.AddContainer("nginx", "nginx")
     .WithOtlpExporter()
     .WithLifetime(ContainerLifetime.Persistent)
     .WithHttpEndpoint(targetPort: 80)

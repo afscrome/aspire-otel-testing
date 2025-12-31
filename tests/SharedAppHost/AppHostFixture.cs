@@ -17,7 +17,7 @@ public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
         cts.CancelAfter(TimeSpan.FromSeconds(40));
 
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.AppHost>(cts.Token);
-        appHost.WithCILogging();
+        appHost.WithTestingDefaults();
 
         App = await appHost.BuildAsync(cts.Token);
 
@@ -26,11 +26,9 @@ public class AppHostFixture : IAsyncLifetime, IClassFixture<AppHostFixture>
 
     public async ValueTask DisposeAsync()
     {
-        // HACK: Need to give Projects enough time to flush their telemery
-        // Without this, telemetry intermittently goes missing
-        await Task.Delay(TimeSpan.FromSeconds(2));
-
         using var _ = Source.StartActivity("AppHostFixture.DisposeAsync");
+
+        await (App?.StopAsync() ?? Task.CompletedTask);
         await (App?.DisposeAsync() ?? ValueTask.CompletedTask);
     }
 }
