@@ -47,7 +47,7 @@ jobs:
     - name: 🛠️ Build
       run: dotnet build
     - name: 🧪 Test
-      run: dotnet test --results-directory ${{runner.temp}}/test-results
+      run: dotnet test --results-directory ${{runner.temp}}/test-results --max-parallel-test-modules 1
       env:
         DCP_DIAGNOSTICS_LOG_LEVEL: debug
         ASPIRE__TEST__DCPLOGBASEPATH: ${{runner.temp}}/test-results/dcp
