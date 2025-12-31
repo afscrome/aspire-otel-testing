@@ -17,12 +17,9 @@ jobs:
     name: 🏗️ Build
     runs-on: ubuntu-latest
     steps:
-    #- name: 🧮 Calculate env vars
-    #  run: echo TEST_RESULTS_DIR=${{runner.temp}}/test-results >> $GITHUB_ENV
     - name: 📥 Checkout
       uses: actions/checkout@v4
-    #- name: 🐳 Docker status
-    #  run: docker info
+  
     - name: 🩺 Start Otel Collector
       run: >
         mkdir -p ${{runner.temp}}/test-results/otel/;
@@ -35,24 +32,34 @@ jobs:
         -e ASPIRE_ENDPOINT=http://host.docker.internal:14317
         otel/opentelemetry-collector-contrib:latest
         --config /mnt/otel-config.yaml
+  
     - name: ⚙️ Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 10.0.x
         dotnet-quality: 'preview'
+  
     - name: 🔒 Trust Dev Cert
       run: dotnet dev-certs https --trust
+
+    # See https://github.com/dotnet/aspire/issues/13720
+    - name: 🤔 Work around persistent resource generated password
+      run: dotnet user-secrets --project src/AppHost set 'Parameters:cache-password' "aA1?$(new-guid)"
+
     - name: 📦 Restore dependencies
       run: dotnet restore
+
     - name: 🛠️ Build
       run: dotnet build
+
     - name: 🧪 Test
-      run: dotnet test --results-directory ${{runner.temp}}/test-results --max-parallel-test-modules 1
+      run: dotnet test --results-directory ${{runner.temp}}/test-results
       env:
         DCP_DIAGNOSTICS_LOG_LEVEL: debug
         ASPIRE__TEST__DCPLOGBASEPATH: ${{runner.temp}}/test-results/dcp
         DCP_PRESERVE_EXECUTABLE_LOGS: 1      
-    - name: Upload test results
+
+    - name: 📤 Upload test results
       uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
