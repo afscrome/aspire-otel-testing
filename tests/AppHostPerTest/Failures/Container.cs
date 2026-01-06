@@ -68,7 +68,8 @@ public class Container
         await using var builder = DistributedApplicationTestingBuilder.Create();
 
         var container = builder.AddContainer("container", "does-not-exist")
-            .WithImageRegistry("does.not.exist.internal");
+            .WithImageRegistry("does.not.exist.internal")
+            .WithImagePullPolicy(ImagePullPolicy.Always);
         AddFakeLogging(container);
 
         await using var app = builder.Build();
@@ -76,9 +77,28 @@ public class Container
         await app.ResourceNotifications.WaitForResourceAsync(container.Resource.Name, KnownResourceStates.FailedToStart, cts.Token);
 
         var snapshot = app.Services.GetFakeLogCollector().GetSnapshot();
-        Assert.Contains("Unable to find image 'does.not.exist.internal/does-not-exist:latest' locally", snapshot[0].Message);
-        Assert.Contains("Error response from daemon", snapshot[1].Message);
+        Assert.Contains("Error response from daemon", snapshot[0].Message);
     }
+
+    [Fact]
+    public async Task NeedsAuthentication()
+    {
+        using var cts = DefaultCancellationTokenSource();
+        await using var builder = DistributedApplicationTestingBuilder.Create();
+
+        var container = builder.AddContainer("container", "mattermost.com/go-msft-fips:1.24.6")
+            .WithImageRegistry("cgr.dev")
+            .WithImagePullPolicy(ImagePullPolicy.Always);
+        AddFakeLogging(container);
+
+        await using var app = builder.Build();
+        await app.StartAsync(cts.Token);
+        await app.ResourceNotifications.WaitForResourceAsync(container.Resource.Name, KnownResourceStates.FailedToStart, cts.Token);
+
+        var snapshot = app.Services.GetFakeLogCollector().GetSnapshot();
+        Assert.EndsWith("Error response from daemon: error from registry: Authentication required", snapshot[0].Message);
+    }
+
 
     [Fact]
     //https://github.com/dotnet/aspire/issues/10218#issuecomment-3712542734
