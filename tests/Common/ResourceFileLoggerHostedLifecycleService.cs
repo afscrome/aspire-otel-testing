@@ -60,8 +60,12 @@ internal class ResourceFileLoggerHostedLifecycleService(
         var directory = new DirectoryInfo(path);
         directory.Create();
 
-        var logPath = Path.Combine(directory.FullName, $"{resource.Name}-{resourceId}.log");
-        logger.LogInformation("Writing logs for {Resource} to {Path}", resource.Name, logPath);
+        var logPath = Path.Combine(directory.FullName, $"{resourceId}.log");
+
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("Writing logs for {Resource} to {Path}", resource.Name, logPath);
+        }
 
         using var logFileStream = new FileStream(logPath, FileMode.Create, FileAccess.Write, FileShare.Read);
         using var writer = new StreamWriter(logFileStream)
@@ -80,6 +84,7 @@ internal class ResourceFileLoggerHostedLifecycleService(
                         await writer.WriteAsync("ERR: ");
                     }
                     await writer.WriteLineAsync(line.Content);
+                    await writer.FlushAsync(cancellationToken);
                 }
             }
         }
