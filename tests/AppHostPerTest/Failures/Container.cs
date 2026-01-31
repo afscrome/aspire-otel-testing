@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Testing;
 
 
 namespace AppHostPerTest.Failures;
@@ -19,29 +21,43 @@ public class Container
         builder.ApplicationBuilder.Services.AddLogging(x => x.AddFakeLogging(y => y.FilteredCategories.Add(category)));
     }
 
+    private static List<string?> GetLogLines(FakeLogCollector logCollector)
+    {
+        return [.. logCollector.GetSnapshot()
+                .Select(x => x.StructuredState?.SingleOrDefault(x => x.Key == "LineContent"))
+                .Select(x => x?.Value)];
+    }
 
     [Fact]
     //https://github.com/dotnet/aspire/issues/13756
-    public async Task BindMountDoesNotExist()
+    public async Task IllegalBindMount()
     {
         using var cts = DefaultCancellationTokenSource();
         await using var builder = DistributedApplicationTestingBuilder.Create();
 
+        var illegalPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? "blah:\\invalid"
+            : "/dev/null/invalid";
+
         var container = builder.AddContainer("container", "nginx")
-            .WithBindMount("X:\\invalid\\path", "/mtn/whatever");
+            .WithBindMount(illegalPath, "/mtn/whatever");
         AddFakeLogging(container);
 
-        await using var app = builder.Build();
-        await app.StartAsync(cts.Token);
-        await app.ResourceNotifications.WaitForResourceAsync(container.Resource.Name, KnownResourceStates.FailedToStart, cts.Token);
+        FakeLogCollector logCollector;
+        await using (var app = builder.Build())
+        {
+            logCollector = app.Services.GetFakeLogCollector();
+            await app.StartAsync(cts.Token);
+            await app.ResourceNotifications.WaitForResourceAsync(container.Resource.Name, KnownResourceStates.FailedToStart, cts.Token);
+            //await app.StopAsync(cts.Token);
+        }
 
-        var snapshot = app.Services.GetFakeLogCollector().GetSnapshot();
-        Assert.True(snapshot.Any());
-        Assert.Contains("docker: Error response from daemon: mkdir x:\\invalid: The system cannot find the path specified.", snapshot[0].Message);
+        var logLines = GetLogLines(logCollector);
+        Assert.Contains(logLines, x => x.EndsWith("docker: Error response from daemon: mkdir x:\\invalid: The system cannot find the path specified."));
     }
 
     [Fact]
-    public async Task BadContainerArg()
+    public async Task BadContainerRuntimeArg()
     {
         using var cts = DefaultCancellationTokenSource();
         await using var builder = DistributedApplicationTestingBuilder.Create();
@@ -50,15 +66,17 @@ public class Container
             .WithContainerRuntimeArgs("--illegal");
         AddFakeLogging(container);
 
-        await using var app = builder.Build();
-        await app.StartAsync(cts.Token);
-        await app.ResourceNotifications.WaitForResourceAsync(container.Resource.Name, KnownResourceStates.FailedToStart, cts.Token);
+        FakeLogCollector logCollector;
+        await using (var app = builder.Build())
+        {
+            logCollector = app.Services.GetFakeLogCollector();
+            await app.StartAsync(cts.Token);
+            await app.ResourceNotifications.WaitForResourceAsync(container.Resource.Name, KnownResourceStates.FailedToStart, cts.Token);
+            //await app.StopAsync(cts.Token);
+        }
 
-        // Asert on ILogger `{builder.Environment.ApplicationName}.Resources.container`
-        // Expected Log: "unknown flag: --illegal"
-
-        var snapshot = app.Services.GetFakeLogCollector().GetSnapshot();
-        Assert.Contains("unknown flag: --illegal", snapshot[0].Message);
+        var logLines = GetLogLines(logCollector);
+        Assert.Contains(logLines, x => x.EndsWith("unknown flag: --illegal"));
     }
 
     [Fact]
@@ -72,12 +90,17 @@ public class Container
             .WithImagePullPolicy(ImagePullPolicy.Always);
         AddFakeLogging(container);
 
-        await using var app = builder.Build();
-        await app.StartAsync(cts.Token);
-        await app.ResourceNotifications.WaitForResourceAsync(container.Resource.Name, KnownResourceStates.FailedToStart, cts.Token);
+        FakeLogCollector logCollector;
+        await using (var app = builder.Build())
+        {
+            logCollector = app.Services.GetFakeLogCollector();
+            await app.StartAsync(cts.Token);
+            await app.ResourceNotifications.WaitForResourceAsync(container.Resource.Name, KnownResourceStates.FailedToStart, cts.Token);
+            //await app.StopAsync(cts.Token);
+        }
 
-        var snapshot = app.Services.GetFakeLogCollector().GetSnapshot();
-        Assert.Contains("Error response from daemon", snapshot[0].Message);
+        var logLines = GetLogLines(logCollector);
+        Assert.Contains(logLines, x => x.Contains("Error response from daemon"));
     }
 
     [Fact]
@@ -91,12 +114,17 @@ public class Container
             .WithImagePullPolicy(ImagePullPolicy.Always);
         AddFakeLogging(container);
 
-        await using var app = builder.Build();
-        await app.StartAsync(cts.Token);
-        await app.ResourceNotifications.WaitForResourceAsync(container.Resource.Name, KnownResourceStates.FailedToStart, cts.Token);
+        FakeLogCollector logCollector;
+        await using (var app = builder.Build())
+        {
+            logCollector = app.Services.GetFakeLogCollector();
+            await app.StartAsync(cts.Token);
+            await app.ResourceNotifications.WaitForResourceAsync(container.Resource.Name, KnownResourceStates.FailedToStart, cts.Token);
+            //await app.StopAsync(cts.Token);
+        }
 
-        var snapshot = app.Services.GetFakeLogCollector().GetSnapshot();
-        Assert.EndsWith("Error response from daemon: error from registry: Authentication required", snapshot[0].Message);
+        var logLines = GetLogLines(logCollector);
+        Assert.Contains(logLines, x => x.EndsWith("Error response from daemon: error from registry: Authentication required"));
     }
 
 
@@ -109,18 +137,31 @@ public class Container
 
         var container = builder.AddContainer("container", "alpine")
             .WithEntrypoint("sh")
-            .WithArgs("-c", "echo Hello World;exit 732");
+            // write to both stdout and stderr to verify we capture both
+            .WithArgs("-c", """
+                echo "Hello from Stdout"
+                >&2 echo "Hello from Stderr";
+                exit 7123
+            """);
         AddFakeLogging(container);
 
-        await using var app = builder.Build();
-        await app.StartAsync(cts.Token);
+        FakeLogCollector logCollector;
+        await using (var app = builder.Build())
+        {
+            logCollector = app.Services.GetFakeLogCollector();
+            await app.StartAsync(cts.Token);
 
-        //IMO, not sure this case should really go to `FailedToStart`.  The contaienr did start, it just exited immediately.
-        // So I'd expect it to go to `Runnign`, and then immediately to `Exited`.
-        await app.ResourceNotifications.WaitForResourceAsync(container.Resource.Name, KnownResourceStates.FailedToStart, cts.Token);
+            //IMO, not sure this case should really go to `FailedToStart`.  The contaienr did start, it just exited immediately.
+            // So I'd expect it to go to `Runnign`, and then immediately to `Exited`.
+            // https://github.com/dotnet/aspire/issues/13760
+            await app.ResourceNotifications.WaitForResourceAsync(container.Resource.Name, KnownResourceStates.FailedToStart, cts.Token);
+            await app.StopAsync(cts.Token);
+        }
 
-        var snapshot = app.Services.GetFakeLogCollector().GetSnapshot();
-        Assert.EndsWith("Hello World", snapshot[3].Message);
+        var logLines = GetLogLines(logCollector);
+        // assert output from both stdout and stderr are captured
+        Assert.Contains(logLines, x => x.EndsWith("Hello from Stdout"));
+        Assert.Contains(logLines, x => x.EndsWith("Hello from Stderr"));
     }
 
 }

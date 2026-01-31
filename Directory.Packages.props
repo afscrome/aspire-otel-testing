@@ -3,7 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.1.0" />
+    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.2.0-preview.1.26069.2" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.1.0" />
     <PackageVersion Include="CommunityToolkit.Aspire.Hosting.OpenTelemetryCollector" Version="9.8.0-beta.394" />
     <PackageVersion Include="Extensions.Logging.NUnit" Version="1.0.1" />
@@ -20,7 +20,7 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.14.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.14.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.14.0" />
-    <PackageVersion Include="Aspire.StackExchange.Redis.OutputCaching" Version="13.1.0" />
+    <PackageVersion Include="Aspire.StackExchange.Redis.OutputCaching" Version="13.2.0-preview.1.26069.2" />
     <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.0.2" />
   </ItemGroup>
 </Project>

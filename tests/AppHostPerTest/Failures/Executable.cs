@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Testing;
 
 namespace AppHostPerTest.Failures;
 
@@ -18,6 +20,14 @@ public class Executable
         builder.ApplicationBuilder.Services.AddLogging(x => x.AddFakeLogging(y => y.FilteredCategories.Add(category)));
     }
 
+    private static List<string> GetLogLines(FakeLogCollector logCollector)
+    {
+        return [.. logCollector.GetSnapshot()
+                .Select(x => x.StructuredState?.SingleOrDefault(x => x.Key == "LineContent"))
+                .Where(x => x is not null)
+                .Select(x => x!.Value.Value ?? "")];
+    }
+
 
     [Fact]
     // https://github.com/dotnet/aspire/issues/10218#issuecomment-3712609775
@@ -29,16 +39,20 @@ public class Executable
         var container = builder.AddExecutable("exe", "does-not-exist", "");
         AddFakeLogging(container);
 
-        await using var app = builder.Build();
-        await app.StartAsync(cts.Token);
-        await app.ResourceNotifications.WaitForResourceAsync(container.Resource.Name, KnownResourceStates.FailedToStart, cts.Token);
+        FakeLogCollector logCollector;
+        await using (var app = builder.Build())
+        {
+            logCollector = app.Services.GetFakeLogCollector();
+            await app.StartAsync(cts.Token);
+            await app.ResourceNotifications.WaitForResourceAsync(container.Resource.Name, KnownResourceStates.FailedToStart, cts.Token);
+            //await app.StopAsync(cts.Token);
+        }
 
-        //await Task.Delay(1_000);
-
-        var snapshot = app.Services.GetFakeLogCollector().GetSnapshot();
-        Assert.True(snapshot.Any());
-        Assert.Contains("[sys] Failed to start a process: Cmd = does-not-exist, Args = [], Error = exec: \"does-not-exist\": executable file not found in %PATH%", snapshot[1].Message);
-        Assert.Contains("[sys] Failed to start Executable: Error = exec: \"does-not-exist\": executable file not found in %PATH%", snapshot[2].Message);
+        var logLines = GetLogLines(logCollector);
+ 
+        var path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "%PATH%" : "$PATH";
+        Assert.Contains(logLines, x => x.EndsWith($"[sys] Failed to start a process: Cmd = does-not-exist, Args = [], Error = exec: \"does-not-exist\": executable file not found in {path}"));
+        Assert.Contains(logLines, x => x.EndsWith($"[sys] An attempt to start the Executable failed: Error = exec: \"does-not-exist\": executable file not found in {path}"));
     }
 
 
@@ -48,17 +62,25 @@ public class Executable
         using var cts = DefaultCancellationTokenSource();
         await using var builder = DistributedApplicationTestingBuilder.Create();
 
-        var container = builder.AddExecutable("cmd", "cmd", "")
-            .WithArgs("/c", "echo Hello World& exit 732");
+        var container = builder.AddExecutable("pwsh", "pwsh", "")
+            .WithArgs("-Command", """
+                Write-Host "Hello from Stdout"
+                [Console]::Error.WriteLine("Hello from Stderr")
+            """);
         AddFakeLogging(container);
 
-        await using var app = builder.Build();
-        await app.StartAsync(cts.Token);
-        await app.ResourceNotifications.WaitForResourceAsync(container.Resource.Name, KnownResourceStates.Finished, cts.Token);
+        FakeLogCollector logCollector;
+        await using (var app = builder.Build())
+        {
+            logCollector = app.Services.GetFakeLogCollector();
+            await app.StartAsync(cts.Token);
+            await app.ResourceNotifications.WaitForResourceAsync(container.Resource.Name, KnownResourceStates.Finished, cts.Token);
+            //await app.StopAsync(cts.Token);
+        }
 
-        var snapshot = app.Services.GetFakeLogCollector().GetSnapshot();
-        Assert.True(snapshot.Any());
-        Assert.EndsWith("Hello World", snapshot[1].Message);
+        var logLines = GetLogLines(logCollector);
+        Assert.Contains(logLines, x => x.EndsWith("Hello from Stdout"));
+        Assert.Contains(logLines, x => x.EndsWith("Hello from Stderr"));
     }
 
 }
